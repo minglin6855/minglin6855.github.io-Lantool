@@ -1,3 +1,65 @@
+<script>
+  // 1. 定義 Render 後端的完整網址 (結尾不要加斜線)
+  const BACKEND_URL = 'https://minglin6855-github-io-lantool.onrender.com';
+
+  // 自動取得工作端 WAN IP (發送到 Render API)
+  async function fetchWanIp() {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/myip`);
+      const data = await res.json();
+      document.getElementById('wan-ip').innerText = data.ip;
+    } catch {
+      document.getElementById('wan-ip').innerText = '無法讀取 IP';
+    }
+  }
+  fetchWanIp();
+
+  // 修改 sendRequest，讓 URL 自動加上 Render 網址
+  async function sendRequest(path, body, resultId) {
+    const resultElem = document.getElementById(resultId);
+    resultElem.innerText = '執行中，請稍候...';
+
+    try {
+      // 這裡改為發送到 Render 的完整 API 路徑
+      const res = await fetch(`${BACKEND_URL}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        resultElem.innerText = `[伺服器錯誤 ${res.status}]：\n${errorText}`;
+        return;
+      }
+
+      const data = await res.json();
+      resultElem.innerText = data.output || data.message || JSON.stringify(data, null, 2);
+    } catch (err) {
+      resultElem.innerText = '連線失敗：' + err.message;
+    }
+  }
+
+  function runPing() {
+    const target = document.getElementById('ping-target').value;
+    if (!target) return alert('請輸入目標 IP 或網域');
+    sendRequest('/api/ping', { target }, 'ping-result');
+  }
+
+  function runTelnet() {
+    const host = document.getElementById('telnet-host').value;
+    const port = document.getElementById('telnet-port').value;
+    if (!host || !port) return alert('請輸入完整的 IP 與 Port');
+    sendRequest('/api/telnet', { host, port }, 'telnet-result');
+  }
+
+  function runTraceroute() {
+    const target = document.getElementById('trace-target').value;
+    if (!target) return alert('請輸入目標 IP 或網域');
+    sendRequest('/api/traceroute', { target }, 'trace-result');
+  }
+</script>
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
